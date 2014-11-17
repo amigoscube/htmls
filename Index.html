@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="css/jqx.base.css" rel="stylesheet" type="text/css" />
+    <link href="css/jqx.arctic.css" rel="stylesheet" media="screen" />
+    <!--<style>
+        .jqx-grid-cell {
+            float:left;
+        }
+    </style>-->
+</head>
+<body>
+    <div id="jqxgrid"></div>
+
+    <input type="button" value="Generate HTMLs" id="generator" />
+
+    <!--Scripts-->
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="Js/jqxcore.js"></script>
+    <script src="Js/jqxdata.js"></script>
+    <script src="Js/jqxbuttons.js"></script>
+    <script src="Js/jqxscrollbar.js"></script>
+    <script src="Js/jqxmenu.js"></script>
+    <script src="Js/jqxgrid.js"></script>
+    <script src="Js/jqxgrid.sort.js"></script>
+    <script src="Js/jqxgrid.filter.js"></script>
+    <script src="Js/jqxgrid.selection.js"></script>
+    <script src="Js/jqxpanel.js"></script>
+    <script src="Js/jqxcheckbox.js"></script>
+    <script src="Js/jqxlistbox.js"></script>
+    <script src="Js/jqxdropdownlist.js"></script>
+    <script src="Js/jqxgrid.pager.js"></script>
+    <script src="Js/jqxgrid.columnsresize.js"></script>
+    <script src="Js/jqxgrid.aggregates.js"></script>
+    <script src="Js/jqxgrid.edit.js"></script>
+    <script src="Js/demos.js"></script>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                type: "POST",
+                url: "/generator.aspx/GetData",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (data) {
+                    var d = JSON.stringify(data.d);
+                    renderGrid(d);
+                },
+                failure: function (response) {
+                    var r = jQuery.parseJSON(response.responseText);
+                    alert("Message: " + r.Message);
+                    alert("StackTrace: " + r.StackTrace);
+                    alert("ExceptionType: " + r.ExceptionType);
+                }
+            });
+
+            //Create GRID
+            renderGrid = function (data) {
+                var source =
+            {
+                datatype: "json",
+                datafields: [
+                    { name: 'HtmlFilename', type: 'string' },
+                    { name: 'ValidFrom', type: 'date'},
+                    { name: 'ValidTo', type: 'date'}
+                ],
+                localdata: data
+            };
+                var dataAdapter = new $.jqx.dataAdapter(source);
+
+                $("#jqxgrid").jqxGrid(
+                {
+                    width: 850,
+                    height: 450,
+                    source: dataAdapter,                    
+//                    pageable: true,
+//                    autorowheight: true,
+                    altrows: true,
+//                    columnsresize: true,
+                    showfilterrow: true,
+                    filterable: true,
+//                    showaggregates: true,
+//                    showstatusbar: true,
+//                    statusbarheight: 25,
+                    //                    autoshowfiltericon: true,
+                    sortable: true,
+                    selectionmode: 'checkbox',
+                    columns: [
+                        { text: 'Html File Name', datafield: 'HtmlFilename', showfilterrow: true, filterable: true},
+                        { text: 'Valid From', datafield: 'ValidFrom', filterable: false, cellsformat: 'yyyy-MM-dd HH:mm:ss.fff'},
+                        { text: 'Valid To', datafield: 'ValidTo', filterable: false, cellsformat: 'yyyy-MM-dd HH:mm:ss.fff'}
+                    ]
+                });
+            }
+
+            // select or unselect rows when the checkbox is checked or unchecked.
+            $("#jqxgrid").bind('cellendedit', function (event) {
+                if (event.args.value) {
+                    $("#jqxgrid").jqxGrid('selectrow', event.args.rowindex);
+                }
+                else {
+                    $("#jqxgrid").jqxGrid('unselectrow', event.args.rowindex);
+                }
+            });
+
+            //Generate Button Click
+            $('#generator').click(function () {
+                var rows = $('#jqxgrid').jqxGrid('selectedrowindexes');
+                for (var m = 0; m < rows.length; m++) {
+                    var row = $("#jqxgrid").jqxGrid('getrowdata', rows[m]);
+                    var f = row["HtmlFilename"];
+                    var vf = row["ValidFrom"].toISOString();
+                    var vt = row["ValidTo"].toISOString();
+
+                    htmlfileSea(f, vf, vt);
+                }
+            });
+
+            //Ajax call for 1st Procedure
+
+            htmlfileSea = function (f, vf, vt) {
+                var params = "{ 'htmlfile' : '" + f + "','validfrom' : '" + vf + "','validto' : '" + vt + "'  }";
+                $.ajax({
+                    type: "POST",
+                    url: "/generator.aspx/HtmlFileSea",                    
+                    data: params,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.d) {
+                            alert("Success");
+                        } else {
+                            alert("Fail");
+                        }
+                    },
+                    failure: function (response) {
+                        var r = jQuery.parseJSON(response.responseText);
+                        alert("Message: " + r.Message);
+                        alert("StackTrace: " + r.StackTrace);
+                        alert("ExceptionType: " + r.ExceptionType);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
